@@ -60,12 +60,13 @@ class NUTS(ArrayStep):
 
 
 
-        n = scaling.shape[0]
 
-        self.step_size = step_scale / n**(1/4.)
 
 
         self.potential = quad_potential(scaling, is_cov, as_cov=False)
+        n = scaling.lbfgs.S0.shape[0] #scaling.shape[0]
+
+        self.step_size = step_scale / n**(1/4.)
 
         if state is None:
             state = SamplerHist()
@@ -101,7 +102,7 @@ class NUTS(ArrayStep):
         s=1
         j=0
 
-        while s == 1:
+        while s == 1 and j < 7:
             v = bern(.5) * 2 -1
 
             if v == -1:
@@ -160,3 +161,5 @@ def buildtree(H, q, p, u, v, j,e, Emax, q0, p0):
             n1 = n1 + n11
         return qn, pn, qp, pp, q1, n1, s1, a1, na1
     return
+
+

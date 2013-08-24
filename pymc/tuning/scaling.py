@@ -9,7 +9,7 @@ import numpy as np
 from numpy import exp, log, sqrt
 from ..core import *
 
-__all__ = ['approx_hess', 'find_hessian', 'trace_cov', 'guess_scaling']
+__all__ = ['approx_hess', 'find_hessian', 'trace_cov', 'guess_scaling', 'flatten_samples']
 
 
 def approx_hess(point, vars=None, model=None):
@@ -78,6 +78,7 @@ def guess_scaling(point, model=None):
     h = find_hessian_diag(point, model=model)
     return adjust_scaling(h)
 
+
 def adjust_scaling(s):
     if s.ndim < 2:
         return adjust_precision(s)
@@ -100,6 +101,32 @@ def eig_recompose(val, vec):
     return vec.dot(np.diag(val)).dot(vec.T)
 
 
+
+def flatten_samples(trace, vars=None):
+    """
+    Flatten samples using a sample trace
+
+    Parameters
+    ----------
+    trace : Trace
+    vars : list
+        variables for which to calculate covariance matrix
+
+    Returns
+    -------
+    r : array (n,n)
+        covariance matrix
+    """
+
+    if vars is None:
+        vars = trace.samples.keys()
+
+    def flat_t(var):
+        x = trace[str(var)]
+        return x.reshape((x.shape[0], np.prod(x.shape[1:])))
+
+    return np.concatenate(map(flat_t, vars), 1).T
+
 def trace_cov(trace, vars=None):
     """
     Calculate the flattened covariance matrix using a sample trace
@@ -118,11 +145,4 @@ def trace_cov(trace, vars=None):
         covariance matrix
     """
 
-    if vars is None:
-        vars = trace.samples.keys
-
-    def flat_t(var):
-        x = trace[str(var)]
-        return x.reshape((x.shape[0], np.prod(x.shape[1:])))
-
-    return np.cov(np.concatenate(map(flat_t, vars), 1).T)
+    return np.cov(flatten_samples(trace, vars))

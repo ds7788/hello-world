@@ -27,6 +27,9 @@ def quad_potential(C, is_cov, as_cov):
         q : Quadpotential
     """
 
+    if isquadpotential(C):
+        return C
+
     if issparse(C) and is_cov != as_cov:
         if not chol_available:
             raise ImportError("Requires scikits.sparse")
