@@ -29,6 +29,7 @@ def transform(name, forward, backward, jacobian_det, getshape=None):
 
             default_testvals = dist.default_testvals
 
+            print locals()
             return locals()
 
         return TransformedDistribtuion.dist()
