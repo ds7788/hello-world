@@ -13,12 +13,14 @@ def normal_model(H):
 
     return model
 
+
+H = array([[.25, .25, .5],
+            [.25,    1,    0],
+            [.5,    0,  4]])
+
 def test_lbfgs():
     n = 5
 
-    H = array([[.25, .25, .5],
-               [.25,    1,    0],
-               [.5,    0,  4]])
     d = np.diag(H)
 
     model = normal_model(H)
@@ -37,10 +39,17 @@ def test_lbfgs():
 
     check_quad(LBFGSQuadpotential(g), H)
 
+def test_elemwise():
+    H_diag = np.diag(H)
+    P = quad_potential(H_diag, False, False)
+
+    check_quad(P, np.diag(H_diag))
+
+
 def check_quad(potential, H):
     ref = quad_potential(H, False, False)
 
-    n = 100
+    n = 1000
 
     for _ in range(n):
         x = ref.random()
@@ -49,10 +58,11 @@ def check_quad(potential, H):
 
     P, V = eigh(H)
 
-    x = np.array([q.random() for _ in range(n)])
-
+    x = np.array([potential.random() for _ in range(n)])
+    C = cov(x.T)
     P_inv = V.dot(C).dot(V.T)
-    close_to(P, np.diag(P_inv), 1e-3)
+
+    close_to(P, np.diag(P_inv), 1e-1*P)
 
     #close_to(np.diag(cov(x.T))/ np.diag(H), 1, 3.1 * n**-.5)
 
