@@ -96,6 +96,8 @@ class LBFGS(object):
 
     def Bdot(self, x):
         return self.C.dot(self.C.Tdot(x))
+    def size(self):
+        return len(self.C.a) 
 
 class IterQueue(list):
 

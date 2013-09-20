@@ -9,7 +9,7 @@ from numpy.linalg import inv, eigh
 
 def normal_model(H):
     with Model() as model:
-        x = MvNormal('x', 0, H, shape = 3)
+        x = MvNormal('x', 0, H, shape = H.shape[0])
 
     return model
 
@@ -28,6 +28,7 @@ def test_lbfgs():
     check_lbfgs(H_diagonal, 5)
     check_lbfgs(H_diagonal, 20)
 
+    check_lbfgs(H_full[:2,:2], 10)
     check_lbfgs(H_full, 15)
 
 
@@ -50,6 +51,7 @@ def check_lbfgs(H, n):
                  dlogp({'x' : x}))
 
     pot = LBFGSQuadpotential(g)
+    print " lbfgs len: " + str(pot.lbfgs.lbfgs.size())
     #print pot.lbfgs.lbfgs.S.A0
 
     check_quad(pot, H)
@@ -67,7 +69,7 @@ def check_quad(potential, H):
 
     for i in range(20):
         x = ref.random()
-        name = "trial: " + str(i) + " x: " + str(x) 
+        name = "trial: " + str(i) + " x: " + str(x)  
         rel_close_to(ref.velocity(x) , potential.velocity(x), 1e-2, name)
         rel_close_to(ref.energy(x), potential.energy(x), 1e-2, name)
 
