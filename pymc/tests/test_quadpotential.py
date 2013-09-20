@@ -9,21 +9,32 @@ from numpy.linalg import inv, eigh
 
 def normal_model(H):
     with Model() as model:
-        x = MvNormal('x', 0, H)
+        x = MvNormal('x', 0, H, shape = 3)
 
     return model
 
 
-H = array([[.25, .25, .5],
-            [.25,    1,    0],
+H_full = array([[.25, .1, .5],
+            [.1,    1,    0],
             [.5,    0,  4]])
 
-def test_lbfgs():
-    n = 5
+H_diag = np.diag(H_full)
+H_diagonal= np.diag(H_diag)
 
-    d = np.diag(H)
+
+def test_lbfgs():
+    check_lbfgs(H_diagonal, 0)
+    check_lbfgs(H_diagonal, 1)
+    check_lbfgs(H_diagonal, 5)
+    check_lbfgs(H_diagonal, 20)
+
+    check_lbfgs(H_full, 15)
+
+
+def check_lbfgs(H, n):
 
     model = normal_model(H)
+    d = np.diag(H)
 
     g = HessApproxGen(n, 1/d)
 
@@ -31,16 +42,19 @@ def test_lbfgs():
     logp = model.logpc
     dlogp = model.dlogpc()
 
+    ref = quad_potential(H, False, False)
     for _ in range(n):
-        x = random.normal()
+        x = ref.random()
         g.update(x,
                  logp({'x' : x}),
                  dlogp({'x' : x}))
 
-    check_quad(LBFGSQuadpotential(g), H)
+    pot = LBFGSQuadpotential(g)
+    #print pot.lbfgs.lbfgs.S.A0
+
+    check_quad(pot, H)
 
 def test_elemwise():
-    H_diag = np.diag(H)
     P = quad_potential(H_diag, False, False)
 
     check_quad(P, np.diag(H_diag))
@@ -49,12 +63,13 @@ def test_elemwise():
 def check_quad(potential, H):
     ref = quad_potential(H, False, False)
 
-    n = 1000
+    n = 3000
 
-    for _ in range(n):
+    for i in range(20):
         x = ref.random()
-        close_to(ref.velocity(x), potential.velocity(x), 1e-3)
-        close_to(ref.energy(x), potential.energy(x), 1e-3)
+        name = "trial: " + str(i) + " x: " + str(x) 
+        rel_close_to(ref.velocity(x) , potential.velocity(x), 1e-2, name)
+        rel_close_to(ref.energy(x), potential.energy(x), 1e-2, name)
 
     P, V = eigh(H)
 
@@ -65,8 +80,4 @@ def check_quad(potential, H):
     close_to(P, np.diag(P_inv), 1e-1*P)
 
     #close_to(np.diag(cov(x.T))/ np.diag(H), 1, 3.1 * n**-.5)
-
-
-
-
 

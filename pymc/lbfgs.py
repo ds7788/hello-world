@@ -13,6 +13,8 @@ class HessApproxGen(object):
         self.lbfgs = LBFGS(S0)
 
     def update(self, x, lp, dlp):
+        lp = -lp 
+        dlp = -dlp
         self.lps.put(lp)
         self.xs.put(x)
         self.grads.put(dlp)
@@ -22,8 +24,8 @@ class HessApproxGen(object):
 
         lbfgs = LBFGS(self.S0)
         if len(d) > 0:
-            _,x0, g0 = d.pop(0)
-            for _,x1,g1 in d:
+            l0,x0, g0 = d.pop(0)
+            for l1,x1,g1 in d:
                 s = x1 - x0
                 y = g1 - g0
 
@@ -80,7 +82,7 @@ class LBFGS(object):
         u = s/sBs
 
         """
-                p = s /sy
+        p = s /sy
         q = sqrt(sy/sBs)*Bs - y
 
         t = s/sBs
@@ -111,7 +113,7 @@ class LBFGSQuadpotential(object):
         self.lbfgs = A
 
     def velocity(self, x):
-        return -self.lbfgs.lbfgs.Hdot(x)
+        return self.lbfgs.lbfgs.Hdot(x)
 
     def random(self):
         z = normal(size=self.lbfgs.S0.shape[0])
@@ -122,5 +124,3 @@ class LBFGSQuadpotential(object):
         return .5 * dot(Sd, Sd)
 
     __call__ = random
-
-
