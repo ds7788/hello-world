@@ -82,3 +82,7 @@ def check_quad(potential, H):
 
     #close_to(np.diag(cov(x.T))/ np.diag(H), 1, 3.1 * n**-.5)
 
+"""
+for args in test_lbfgs():
+    args[0](*args[1:])
+"""

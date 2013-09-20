@@ -126,3 +126,4 @@ class LBFGSQuadpotential(object):
         return .5 * dot(Sd, Sd)
 
     __call__ = random
+
