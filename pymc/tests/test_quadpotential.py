@@ -23,16 +23,15 @@ H_diagonal= np.diag(H_diag)
 
 
 def test_lbfgs():
-    check_lbfgs(H_diagonal, 0)
-    check_lbfgs(H_diagonal, 1)
-    check_lbfgs(H_diagonal, 5)
-    check_lbfgs(H_diagonal, 20)
+    yield check_lbfgs, 0, H_diagonal
+    yield check_lbfgs, 1, H_diagonal
+    yield check_lbfgs, 5, H_diagonal
+    yield check_lbfgs, 20, H_diagonal
+    yield check_lbfgs, 10, H_full[:2,:2]
+    yield check_lbfgs, 5, H_full
 
-    check_lbfgs(H_full[:2,:2], 10)
-    check_lbfgs(H_full, 15)
 
-
-def check_lbfgs(H, n):
+def check_lbfgs(n, H):
 
     model = normal_model(H)
     d = np.diag(H)
