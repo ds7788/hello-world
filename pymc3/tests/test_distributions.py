@@ -16,7 +16,7 @@ from .knownfailure import *
 
 
 class Domain(object):
-    def __init__(self, vals, dtype=None, edges=None, shape=None):
+    def __init__(self, vals, dtype=None, edges=None, shape=None, complement=None):
         avals = array(vals)
 
         if edges is None:
@@ -31,6 +31,9 @@ class Domain(object):
         self.lower, self.upper = edges
         self.dtype = avals.dtype
 
+        if complement is not None:
+            self.complement = array(complement)
+
     def __neg__(self):
         return Domain([-v for v in self.vals], self.dtype, (-self.lower, -self.upper), self.shape)
 
@@ -42,10 +45,12 @@ def product(domains):
     for val in itertools.product(*[d.vals for d in domains]):
         yield zip(names, val)
 
-R = Domain([-inf, -2.1, -1, -.01, .0, .01, 1, 2.1, inf])
-Rplus = Domain([0, .01, .1, .9, .99, 1, 1.5, 2, 100, inf])
+R = Domain([-inf, -100, -5, -2.1, -2, -1, -.01, .0, 0, .01, .1, .4, .5, .6, 1., 1, 2, 4, 5, 2.1, 100, inf])
+Rplus = Domain([0, .01, .1, .9, .99, 1, 1.5, 2, 100, inf],
+               complement=[-inf, -100, -2, -1, -.99, -.1])
 Rplusbig = Domain([0, .5, .9, .99, 1, 1.5, 2, 20, inf])
-Unit = Domain([0, .001, .1, .5, .75, .99, 1])
+Unit = Domain([0, .001, .1, .5, .75, .99, 1],
+              complement=[-100, -1.1, 1.1, 100])
 
 Runif = Domain([-1, -.4, 0, .4, 1])
 Rdunif = Domain([-10, 0, 10.])
@@ -54,14 +59,15 @@ Rplusdunif = Domain([2, 10, 100], 'int64')
 
 I = Domain([-1000, -3, -2, -1, 0, 1, 2, 3, 1000], 'int64')
 
-NatSmall = Domain([0, 3, 4, 5, 1000], 'int64')
-Nat = Domain([0, 1, 2, 3, 2000], 'int64')
-NatBig = Domain([0, 1, 2, 3, 5000, 50000], 'int64')
+NatSmall = Domain([0, 3, 4, 5, 1000], 'int64',
+                  complement=[-1000, -5, -4, -3])
+Nat = Domain([0, 1, 2, 3, 2000], 'int64',
+             complement=[-2000, -3, -2, -1])
+NatBig = Domain([0, 1, 2, 3, 5000, 50000], 'int64',
+                complement=[-50000, -5000, -3, -2, -1])
 
-Bool = Domain([0, 0, 1, 1], 'int64')
-
-
-
+Bool = Domain([0, 0, 1, 1], 'int64',
+              complement=[-1, 2])
 
 
 class ProductDomain(object):
@@ -140,111 +146,107 @@ def test_flat():
 
 def test_normal():
     pymc3_matches_scipy(
-            Normal, R, {'mu': R, 'sd': Rplus},
+            Normal, R, {'mu': R, 'sd': R},
             lambda value, mu, sd: sp.norm.logpdf(value, mu, sd)
             )
 
-
 def test_half_normal():
     pymc3_matches_scipy(
-            HalfNormal, Rplus, {'sd': Rplus},
+            HalfNormal, R, {'sd': R},
             lambda value, sd: sp.halfnorm.logpdf(value, scale=sd)
             )
 
 def test_chi_squared():
     pymc3_matches_scipy(
-            ChiSquared, Rplus, {'nu': Rplusdunif},
+            ChiSquared, R, {'nu': R},
             lambda value, nu: sp.chi2.logpdf(value, df=nu)
             )
 
 def test_wald():
     pymc3_matches_scipy(
-            Wald, Rplus, {'mu': Rplus},
+            Wald, R, {'mu': R},
             lambda value, mu: sp.invgauss.logpdf(value, mu)
             )
 
 def test_beta():
     pymc3_matches_scipy(
-            Beta, Unit, {'alpha': Rplus, 'beta': Rplus},
+            Beta, Unit, {'alpha': R, 'beta': R},
             lambda value, alpha, beta: sp.beta.logpdf(value, alpha, beta)
             )
     pymc3_matches_scipy(
-            Beta, Unit, {'mu': Unit, 'sd': Rplus},
+            Beta, Unit, {'mu': R, 'sd': R},
             lambda value, mu, sd: sp.beta.logpdf(value, mu * sd, (1 - mu) * sd)
             )
 
-
 def test_exponential():
     pymc3_matches_scipy(
-            Exponential, Rplus, {'lam': Rplus},
-            lambda value, lam: sp.expon.logpdf(value, 0, 1/lam)
+            Exponential, R, {'lam': R},
+            lambda value, lam: sp.expon.logpdf(value, 0, 1./lam)
             )
 
 def test_geometric():
     pymc3_matches_scipy(
-            Geometric, Nat, {'p': Unit},
+            Geometric, R, {'p': R},
             lambda value, p: np.log(sp.geom.pmf(value, p))
             )
 
-
 def test_negative_binomial():
     pymc3_matches_scipy(
-            NegativeBinomial, Nat, {'mu': Rplus, 'alpha': Rplus},
+            NegativeBinomial, R, {'mu': R, 'alpha': R},
             lambda value, mu, alpha: sp.nbinom.logpmf(value, alpha, 1 - mu/(mu + alpha))
             )
 
-
 def test_laplace():
     pymc3_matches_scipy(
-            Laplace, R, {'mu': R, 'b': Rplus},
+            Laplace, R, {'mu': R, 'b': R},
             lambda value, mu, b: sp.laplace.logpdf(value, mu, b)
             )
+    eval_neg_inf(Laplace, R, {'mu': R, 'b': R})
 
 
 def test_lognormal():
     pymc3_matches_scipy(
-            Lognormal, Rplus, {'mu': R, 'tau': Rplusbig},
+            Lognormal, Rplus, {'mu': R, 'tau': R},
             lambda value, mu, tau: sp.lognorm.logpdf(value, tau**-.5, 0, np.exp(mu))
             )
 
 def test_t():
     pymc3_matches_scipy(
-            T, R, {'nu': Rplus, 'mu': R, 'lam': Rplus},
+            T, R, {'nu': Rplus, 'mu': R, 'lam': R},
             lambda value, nu, mu, lam: sp.t.logpdf(value, nu, mu, lam**-.5)
             )
 
-
 def test_cauchy():
     pymc3_matches_scipy(
-            Cauchy, R, {'alpha': R, 'beta': Rplusbig},
+            Cauchy, R, {'alpha': R, 'beta': R},
             lambda value, alpha, beta: sp.cauchy.logpdf(value, alpha, beta)
             )
 
 def test_half_cauchy():
     pymc3_matches_scipy(
-            HalfCauchy, Rplus, {'beta': Rplusbig},
+            HalfCauchy, R, {'beta': R},
             lambda value, beta: sp.halfcauchy.logpdf(value, scale=beta)
             )
 
 def test_gamma():
     pymc3_matches_scipy(
-            Gamma, Rplus, {'alpha': Rplusbig, 'beta': Rplusbig},
+            Gamma, R, {'alpha': R, 'beta': R},
             lambda value, alpha, beta: sp.gamma.logpdf(value, alpha, scale=1.0/beta)
             )
     pymc3_matches_scipy(
-            Gamma, Rplus, {'mu': Rplusbig, 'sd': Rplusbig},
+            Gamma, R, {'mu': R, 'sd': R},
             lambda value, mu, sd: sp.gamma.logpdf(value, mu**2 / sd**2, scale=1.0/(mu / sd**2))
             )
 
 def test_inverse_gamma():
     pymc3_matches_scipy(
-            InverseGamma, Rplus, {'alpha': Rplus, 'beta': Rplus},
+            InverseGamma, R, {'alpha': R, 'beta': R},
             lambda value, alpha, beta: sp.invgamma.logpdf(value, alpha, scale=beta)
             )
 
 def test_pareto():
     pymc3_matches_scipy(
-            Pareto, Rplus, {'alpha': Rplusbig, 'm': Rplusbig},
+            Pareto, R, {'alpha': R, 'm': R},
             lambda value, alpha, m: sp.pareto.logpdf(value, alpha, scale=m)
             )
 
@@ -263,37 +265,37 @@ def scipy_exponweib_sucks(value, alpha, beta):
 
 def test_weibull():
     pymc3_matches_scipy(
-            Weibull, Rplus, {'alpha': Rplusbig, 'beta': Rplusbig},
+            Weibull, R, {'alpha': R, 'beta': R},
             scipy_exponweib_sucks
             )
 
 def test_tpos():
     #TODO: this actually shouldn't pass
     pymc3_matches_scipy(
-            Tpos, Rplus, {'nu': Rplus, 'mu': R, 'lam': Rplus},
+            Tpos, Rpos, {'nu': R, 'mu': R, 'lam': R},
             lambda value, nu, mu, lam: sp.t.logpdf(value, nu, mu, lam**-.5)
             )
 
 
 def test_binomial():
     pymc3_matches_scipy(
-            Binomial, Nat, {'n': NatSmall, 'p': Unit},
+            Binomial, Nat, {'n': NatSmall, 'p': R},
             lambda value, n, p: sp.binom.logpmf(value, n, p)
             )
 
 def test_betabin():
-    checkd(BetaBin, Nat, {'alpha': Rplus, 'beta': Rplus, 'n': NatSmall})
+    checkd(BetaBin, Nat, {'alpha': R, 'beta': R, 'n': NatSmall})
 
 
 def test_bernoulli():
     pymc3_matches_scipy(
-            Bernoulli, Bool, {'p': Unit},
+            Bernoulli, Bool, {'p': R},
             lambda value, p: sp.bernoulli.logpmf(value, p)
             )
 
 def test_poisson():
     pymc3_matches_scipy(
-            Poisson, Nat, {'mu': Rplus},
+            Poisson, Nat, {'mu': R},
             lambda value, mu: sp.poisson.logpmf(value, mu)
             )
 
@@ -398,11 +400,11 @@ def pymc3_matches_scipy(pymc3_dist, domain, paramdomains, scipy_dist, extra_args
     value = model.named_vars['value']
 
     def logp(args):
-        return scipy_dist(**args)
+        logp_val = scipy_dist(**args)
+        logp_val = -np.inf if np.isnan(logp_val) else logp_val
+        return logp_val
 
     check_logp(model, value, domain, paramdomains, logp)
-
-
 
 def test_bound():
     with Model() as model:
@@ -496,14 +498,16 @@ def check_logp(model, value, domain, paramdomains, logp_reference):
     domains = paramdomains.copy()
     domains['value'] = domain
 
-
     logp = model.fastlogp
 
     for pt in product(domains):
         pt = Point(pt, model=model)
-
-        assert_almost_equal(logp(pt), logp_reference(pt),
-                            decimal=6, err_msg=str(pt))
+        pymc_logp = logp(pt)
+        scipy_logp = logp_reference(pt)
+        assert_almost_equal(pymc_logp, scipy_logp,
+                            decimal=6, err_msg="logp does not match.\npoint: %s\npymc result: %s\nscipy result: %s"\
+                            % (pt, pymc_logp, scipy_logp)
+        )
 
 
 def build_model(distfam, valuedomain, vardomains, extra_args={}):

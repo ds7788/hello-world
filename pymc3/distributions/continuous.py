@@ -178,7 +178,8 @@ class Wald(Continuous):
         return bound(
             ((- (value - mu) ** 2) /
                 (2. * value * (mu ** 2))) + logpow(2. * pi * value **3, -0.5),
-            mu > 0)
+            mu > 0,
+            value > 0)
 
 
 
@@ -266,7 +267,7 @@ class Exponential(Continuous):
     def logp(self, value):
         lam = self.lam
         return bound(log(lam) - lam * value,
-                     value > 0,
+                     value >= 0,
                      lam > 0)
 
 
@@ -293,7 +294,9 @@ class Laplace(Continuous):
         mu = self.mu
         b = self.b
 
-        return -log(2 * b) - abs(value - mu) / b
+        return bound(-log(2 * b) - abs(value - mu) / b,
+                     b > 0
+        )
 
 
 class Lognormal(Continuous):
@@ -336,7 +339,8 @@ class Lognormal(Continuous):
 
         return bound(
             -0.5*tau*(log(value) - mu)**2 + 0.5*log(tau/(2.*pi)) - log(value),
-            tau > 0)
+            tau > 0,
+            value >= 0)
 
 
 class T(Continuous):
@@ -415,7 +419,6 @@ class Pareto(Continuous):
         m = self.m
         return bound(
             log(alpha) + logpow(m, alpha) - logpow(value, alpha+1),
-
             alpha > 0,
             m > 0,
             value >= m)
