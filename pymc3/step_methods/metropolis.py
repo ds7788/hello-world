@@ -100,7 +100,10 @@ class Metropolis(ArrayStep):
 
         delta = np.atleast_1d(self.proposal_dist() * self.scaling)
         if np.any(self.discrete):
-            delta[self.discrete] = round(delta[self.discrete], 0).astype(int)
+            if np.all(self.discrete):
+                delta = round(delta, 0).astype(int)
+            else:
+                delta[self.discrete] = round(delta[self.discrete], 0).astype(int)
 
         q = q0 + delta
 
