@@ -1,5 +1,6 @@
 from .dist_math import *
 from ..model import FreeRV
+import theano
 
 __all__ = ['transform', 'logtransform', 'simplextransform']
 
@@ -83,10 +84,40 @@ def interval_transform(a, b):
 
     return transform("interval", interval_real, real_interval, real_interval_jacobian)
 
+class SimplexTransform(Transform): 
+    def __init__(self):
+        pass
 
+    name = "simplex"
+    def forward(self, x):
+        return theano.tensor.zeros_like(t.as_tensor_variable(x[:-1]))
+
+    def backward(self, y):
+        z = logistic(y)
+        yl = concatenate([z, [1]])
+        yu = concatenate([[1], 1-z])
+        #S,_ = theano.scan(fn=lambda prior_result, s_i: prior_result * s_i, sequences=[yu], outputs_info=t.ones((), dtype='float64'))
+        S = t.extra_ops.cumprod(yu)
+        x = S * yl
+        print (x.tag.test_value)
+        return x
+
+    def jacobian_det(self, y): 
+        yl = logistic(y)
+        yu = concatenate([[1], 1-yl])
+        #S,_ = theano.scan(fn=lambda prior_result, s_i: prior_result * s_i, sequences=[yu], outputs_info=t.ones((), dtype='float64'))
+        S = t.extra_ops.cumprod(yu)
+        return sum(log(S[:-1]) - log(1+exp(yl)) - log(1+exp(-yl)))
+simplextransform = SimplexTransform()
+
+
+"""
+def unsimplex(logodds):
+    p = logistic(logodds)
+    return concatenate([p, 1 - sum(p, keepdims=True)])
 
 simplextransform = transform("simplex",
-                             lambda p: p[:-1],
-                             lambda p: concatenate(
-                             [p, 1 - sum(p, keepdims=True)]),
-                             lambda p: constant([0]))
+                             lambda p: logit(p[:-1]),
+                             unsimplex,
+                             lambda p: sum(logistic_jacobian(p)))
+"""
