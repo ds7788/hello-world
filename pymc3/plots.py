@@ -3,7 +3,7 @@ from scipy.stats import kde
 from .stats import *
 from numpy.linalg import LinAlgError
 
-__all__ = ['traceplot', 'kdeplot', 'kde2plot', 'forestplot', 'autocorrplot']
+__all__ = ['traceplot', 'kdeplot', 'kde2plot', 'forestplot', 'autocorrplot', 'conditional_pdf']
 
 
 def traceplot(trace, vars=None, figsize=None,
@@ -506,3 +506,19 @@ def forestplot(trace_obj, vars=None, alpha=0.05, quartiles=True, rhat=True,
                 spine.set_color('none')  # don't draw spine
 
     return gs
+
+
+def conditional_pdf(variable, index=None, start=None, model=None):
+    model = modelcontext(model)
+    if start is None: 
+        start = model.test_point
+
+    replace = start.copy()
+    x = scalar('x0', dtype=variable.dtype)
+    replace[str(variable)] = set_subtensor(variable[index], x)
+
+    logpt = theano.clone(model.logpt, replace)
+    return theano.function(logpt, x)
+
+
+
