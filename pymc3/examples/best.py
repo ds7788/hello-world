@@ -35,7 +35,7 @@ with pm.Model() as model:
     group1_std = pm.Uniform('group1_std', lower=sigma_low, upper=sigma_high, testval=y1.std())
     group2_std = pm.Uniform('group2_std', lower=sigma_low, upper=sigma_high, testval=y2.std())
     nu = pm.Exponential('nu_minus_one', 1/29.) + 1
-    
+
     lam1 = group1_std**-2
     lam2 = group2_std**-2
 
@@ -46,7 +46,8 @@ with pm.Model() as model:
     diff_of_stds = pm.Deterministic('difference of stds', group1_std - group2_std)
     effect_size = pm.Deterministic('effect size', diff_of_means / pm.sqrt((group1_std**2 + group2_std**2) / 2))
 
-    step = pm.NUTS()
+    start = pm.find_MAP(vars=[nu])
+    step = pm.NUTS(scaling=start)
 
 def run(n=3000):
     if n == "short":
@@ -58,7 +59,6 @@ def run(n=3000):
 
     pm.traceplot(trace[burn:]);
     pm.plots.summary(trace[burn:])
-        
+
 if __name__ == '__main__':
     run()
-
