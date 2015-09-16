@@ -38,7 +38,8 @@ def run(n=1000):
     if n == "short":
         n = 50
     with model:
-        trace = pm.sample(10000, step=[pm.NUTS(), pm.Metropolis()]) 
+        trace = pm.sample(10000, step=[pm.NUTS(vars=model.cont_vars), 
+                                pm.Metropolis(model.disc_vars)]) 
 
 if __name__ == '__main__':
     run()
