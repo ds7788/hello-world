@@ -5,7 +5,7 @@ import theano.tensor as t
 from .test_distributions import Simplex, Rplusbig, Unit, R, Vector, MultiSimplex
 
 from .checks import *
-from ..theanof import jacobian
+from theano.gradient import jacobian
 
 tol = 1e-7
 
