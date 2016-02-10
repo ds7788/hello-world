@@ -2,6 +2,7 @@ from .vartypes import *
 
 from theano import theano, tensor as t, function
 from theano.tensor.var import TensorVariable
+from theano.gradient import jacobian, hessian
 
 import numpy as np
 from functools import wraps

@@ -56,33 +56,6 @@ def gradient(f, vars=None):
         return empty_gradient
 
 
-def jacobian1(f, v):
-    """jacobian of f wrt v"""
-    f = t.flatten(f)
-    idx = t.arange(f.shape[0])
-
-    def grad_i(i):
-        return gradient1(f[i], v)
-
-    return theano.map(grad_i, idx)[0]
-
-
-@memoize
-def jacobian(f, vars=None):
-    if vars is None:
-        vars = cont_inputs(f)
-
-    if vars:
-        return t.concatenate([jacobian1(f, v) for v in vars], axis=1)
-    else: 
-        return empty_gradient
-
-
-@memoize
-def hessian(f, vars=None):
-    return -jacobian(gradient(f, vars), vars)
-
-
 def hessian_diag1(f, v):
 
     g = gradient1(f, v)
