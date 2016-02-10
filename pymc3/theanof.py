@@ -4,7 +4,7 @@ from theano.gof.graph import inputs
 from .memoize import memoize
 from .blocking import ArrayOrdering
 
-__all__ = ['gradient', 'hessian', 'hessian_diag', 'inputvars', 'cont_inputs', 'jacobian', 'CallableTensor', 'join_nonshared_inputs', 'make_shared_replacements']
+__all__ = ['gradient', 'hessian_diag', 'inputvars', 'cont_inputs', 'CallableTensor', 'join_nonshared_inputs', 'make_shared_replacements']
 
 def inputvars(a):
     """
