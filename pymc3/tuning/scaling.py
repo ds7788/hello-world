@@ -85,6 +85,8 @@ def find_hessian(point, vars=None, model=None):
         Variables for which Hessian is to be calculated.
     """
     model = modelcontext(model)
+    if vars is None:
+        vars = model.cont_vars
     H = model.fastd2logp(vars)
     return H(Point(point, model=model))
 
@@ -100,6 +102,8 @@ def find_hessian_diag(point, vars=None, model=None):
         Variables for which Hessian is to be calculated.
     """
     model = modelcontext(model)
+    if vars is None:
+        vars = model.cont_vars
     H = model.fastfn(hessian_diag(model.logpt, vars))
     return H(Point(point, model=model))
 

@@ -151,6 +151,8 @@ class Factor(object):
 
     def fastd2logp(self, vars=None):
         """Compiled log probability density hessian function"""
+        if vars is None:
+            vars = cont_inputs(self.logpt)
         return self.model.fastfn(hessian(self.logpt, vars))
 
     @property
