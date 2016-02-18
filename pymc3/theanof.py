@@ -91,11 +91,11 @@ def hessian_diag1(f, v):
 
     gy = gradient1(f, v)
     
-    J, updates = theano.scan(lambda i, gy, v : t.grad(gy[i], v)[0],
+    H, updates = theano.scan(lambda i, gy, v : t.grad(gy[i], v)[0],
                              sequences=t.arange(gy.shape[0]), 
                              non_sequences=[gy, v])
 
-    return J
+    return H
     
 
 @memoize
