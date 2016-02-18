@@ -4,12 +4,16 @@
 import warnings
 
 import numpy as np
+import scipy
+
 import theano.tensor as T
 from scipy import stats
 from theano.tensor.nlinalg import det, matrix_inverse, trace, eigh
 
 from . import transforms
 from .distribution import Continuous, Discrete, draw_values, generate_samples
+from ..model import Deterministic
+from .continuous import ChiSquared, Normal
 from .special import gammaln, multigammaln
 from .dist_math import bound, logpow, factln
 
@@ -260,6 +264,7 @@ class Wishart(Continuous):
                      T.all(eigh(X)[0] > 0), T.eq(X, X.T),
                      n > (p - 1))
 
+
 def WishartBartlett(name, S, nu, is_cholesky=False, return_cholesky=False):
     """
     Bartlett decomposition of the Wishart distribution. As the Wishart
@@ -303,8 +308,10 @@ def WishartBartlett(name, S, nu, is_cholesky=False, return_cholesky=False):
     tril_idx = np.tril_indices_from(S, k=-1)
     n_diag = len(diag_idx[0])
     n_tril = len(tril_idx[0])
-    c = T.sqrt(pm.ChiSquared('c', nu - np.arange(2, 2+n_diag), shape=n_diag))
-    z = pm.Normal('z', 0, 1, shape=n_tril)
+    c = T.sqrt(ChiSquared('c', nu - np.arange(2, 2+n_diag), shape=n_diag))
+    print('Added new variable c to model diagonal of Wishart.')
+    z = Normal('z', 0, 1, shape=n_tril)
+    print('Added new variable z to model off-diagonals of Wishart.')
     # Construct A matrix
     A = T.zeros(S.shape, dtype=np.float32)
     A = T.set_subtensor(A[diag_idx], c)
@@ -312,9 +319,9 @@ def WishartBartlett(name, S, nu, is_cholesky=False, return_cholesky=False):
 
     # L * A * A.T * L.T ~ Wishart(L*L.T, nu)
     if return_cholesky:
-        return pm.Deterministic(name, T.dot(L, A))
+        return Deterministic(name, T.dot(L, A))
     else:
-        return pm.Deterministic(name, T.dot(T.dot(T.dot(L, A), A.T), L.T))
+        return Deterministic(name, T.dot(T.dot(T.dot(L, A), A.T), L.T))
 
 
 class LKJCorr(Continuous):
