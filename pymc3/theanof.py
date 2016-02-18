@@ -59,12 +59,12 @@ def gradient(f, vars=None):
 def jacobian1(f, v):
     """jacobian of f wrt v"""
     f = t.flatten(f)
-    idx = t.arange(f.shape[0])
-
-    def grad_i(i):
-        return gradient1(f[i], v)
-
-    return theano.map(grad_i, idx)[0]
+    
+    J, updates = theano.scan(lambda i, y,x : t.grad(f[i], v),
+                             sequences=t.arange(f.shape[0]), 
+                             non_sequences=[f, v])
+    
+    return J
 
 
 @memoize
@@ -80,19 +80,23 @@ def jacobian(f, vars=None):
 
 @memoize
 def hessian(f, vars=None):
-    return -jacobian(gradient(f, vars), vars)
+    gy = gradient(f, vars) 
+    H, updates = theano.scan(lambda i, gy, vars : t.grad(gy[i], vars), 
+                            sequences=t.arange(gy.shape[0]), 
+                            non_sequences=[gy, vars])
+    return H
 
 
 def hessian_diag1(f, v):
 
-    g = gradient1(f, v)
-    idx = t.arange(g.shape[0])
+    gy = gradient1(f, v)
+    
+    J, updates = theano.scan(lambda i, gy, v : t.grad(gy[i], v)[0],
+                             sequences=t.arange(gy.shape[0]), 
+                             non_sequences=[gy, v])
 
-    def hess_ii(i):
-        return gradient1(g[i], v)[i]
-
-    return theano.map(hess_ii, idx)[0]
-
+    return J
+    
 
 @memoize
 def hessian_diag(f, vars=None):
