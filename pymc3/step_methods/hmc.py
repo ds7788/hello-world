@@ -97,7 +97,7 @@ class HamiltonianMC(ArrayStep):
         if var.dtype in discrete_types:
             return Competence.incompatible
         return Competence.compatible
-            
+
 
 
 def bern(p):
@@ -106,7 +106,7 @@ def bern(p):
 Hamiltonian = namedtuple("Hamiltonian", "logp, dlogp, pot")
 
 def energy(H, q, p):
-        return -(H.logp(q) - H.pot.energy(p))
+    return -(H.logp(q) - H.pot.energy(p))
 
 def leapfrog(H, q, p, n, e):
     _, dlogp, pot = H
